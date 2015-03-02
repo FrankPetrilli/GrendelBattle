@@ -47,7 +47,7 @@ public class GrendelServer {
 			Debug.print(DEBUG, "Packet received");
 
 			int type = packetType(packet);
-			System.out.println("Type is: " + type);
+			Debug.print(DEBUG, "Type is: " + type);
 			if (type == 0) {
 				damage(packet);
 			} else if (type == 1) {
@@ -56,11 +56,21 @@ public class GrendelServer {
 				register(packet);
 			} else if (type == 3) {
 				killUser(packet);
+			} else if (type == 4) {
+				getHealth(packet);
 			}
 
 		}
 		informDead(connectedHosts);
 	}
+
+	private static void getHealth(DatagramPacket packet) throws IOException {
+		byte[] outBuffer = ("3" + Integer.toString(grendel.getHitPoints())).getBytes();
+		packet.setData(outBuffer);
+		packet.setLength(outBuffer.length);
+		socket.send(packet);
+	}
+
 
 	private static void emptyReply(DatagramPacket packet) throws IOException {
 		byte[] outBuffer = new byte[0];
@@ -72,8 +82,8 @@ public class GrendelServer {
 
 	private static void killUser(DatagramPacket packet) throws IOException {
 		connectedHosts.remove(packet.getAddress());
-		emptyReply(packet);
 		System.out.println(getName(packet.getAddress()) + " was killed by Grendel!");
+		emptyReply(packet);
 	}
 
 	private static String getName(InetAddress address) {
@@ -103,14 +113,15 @@ public class GrendelServer {
 			return;
 		}
 		// Prepare return attack
-		String damageDone = new String("0" + Integer.toString(grendel.attack()));
+		int damage = grendel.attack();
+		String damageDone = new String("0" + Integer.toString(damage));
 		// Send
 		byte[] outBuffer = damageDone.getBytes();
 		packet.setData(outBuffer);
 		packet.setLength(outBuffer.length);
 		socket.send(packet);
 		// Print
-		System.out.println("Grendel returns " + damageDone + " damage to " + packet.getAddress());
+		System.out.println("Grendel returns " + damage + " damage to " + getName(packet.getAddress()));
 	}
 
 	private static void status(DatagramPacket packet) throws IOException {
